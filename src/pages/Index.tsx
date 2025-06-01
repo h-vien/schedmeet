@@ -24,6 +24,7 @@ import {
   endOfWeek,
   eachDayOfInterval,
 } from 'date-fns';
+import { supabase } from '@/lib/supabaseClient';
 import { cn } from '@/lib/utils';
 import TimeRangeSelector from '@/components/TimeRangeSelector';
 import { toast } from '@/hooks/use-toast';
@@ -87,7 +88,7 @@ const Index = () => {
     });
   };
 
-  const handleCreateEvent = () => {
+  const handleCreateEvent = async () => {
     if (!eventName.trim()) {
       toast({
         title: 'Event name required',
@@ -123,22 +124,30 @@ const Index = () => {
       daysOfWeek = selectedDaysOfWeek;
     }
 
-    // Generate a simple ID for the event
-    const eventId = Math.random().toString(36).substring(2, 15);
+    // Insert event into Supabase
+    const { data, error } = await supabase
+      .from('events')
+      .insert([
+        {
+          name: eventName,
+          mode,
+          dates,
+          days_of_week: daysOfWeek,
+          time_range: timeRange,
+        },
+      ])
+      .select();
 
-    // Store event data in localStorage
-    const eventData = {
-      id: eventId,
-      name: eventName,
-      mode,
-      dates,
-      daysOfWeek,
-      timeRange,
-      responses: {},
-      createdAt: new Date().toISOString(),
-    };
+    if (error || !data || !data[0]) {
+      toast({
+        title: 'Error creating event',
+        description: error?.message || 'Unknown error',
+        variant: 'destructive',
+      });
+      return;
+    }
 
-    localStorage.setItem(`event_${eventId}`, JSON.stringify(eventData));
+    const eventId = data[0].id;
 
     toast({
       title: 'Event created!',

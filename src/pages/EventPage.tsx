@@ -14,14 +14,15 @@ import { Share2, Copy, ArrowLeft, Users } from 'lucide-react';
 import { format, parse } from 'date-fns';
 import { toast } from '@/hooks/use-toast';
 import AvailabilityGrid from '@/components/AvailabilityGrid';
+import { supabase } from '@/lib/supabaseClient';
 
 interface EventData {
   id: string;
   name: string;
   mode?: 'specific' | 'weekly';
   dates: string[];
-  daysOfWeek?: number[];
-  timeRange: { start: string; end: string };
+  days_of_week?: number[];
+  time_range: { start: string; end: string };
   responses: Record<string, Record<string, boolean>>;
   createdAt: string;
 }
@@ -38,19 +39,36 @@ const EventPage = () => {
   const [hasEnteredName, setHasEnteredName] = useState(false);
 
   useEffect(() => {
-    if (id) {
-      const stored = localStorage.getItem(`event_${id}`);
-      if (stored) {
-        const data = JSON.parse(stored);
-        // Convert date strings back to Date objects for display
-        data.dates = data.dates.map((dateStr: string) =>
-          typeof dateStr === 'string'
-            ? dateStr
-            : new Date(dateStr).toISOString()
-        );
-        setEventData(data);
+    const fetchEvent = async () => {
+      if (id) {
+        const { data, error } = await supabase
+          .from('events')
+          .select('*')
+          .eq('id', id)
+          .single();
+        if (data) {
+          // Fetch votes for this event
+          const { data: votesData } = await supabase
+            .from('votes')
+            .select('*')
+            .eq('event_id', id);
+          // Merge votes into responses
+          const responses: Record<string, Record<string, boolean>> = {};
+          if (votesData) {
+            votesData.forEach(
+              (vote: {
+                user_name: string;
+                availability: Record<string, boolean>;
+              }) => {
+                responses[vote.user_name] = vote.availability || {};
+              }
+            );
+          }
+          setEventData({ ...data, responses });
+        }
       }
-    }
+    };
+    fetchEvent();
   }, [id]);
 
   const handleShareUrl = () => {
@@ -62,7 +80,7 @@ const EventPage = () => {
     });
   };
 
-  const handleSubmitAvailability = () => {
+  const handleSubmitAvailability = async () => {
     if (!userName.trim()) {
       toast({
         title: 'Name required',
@@ -76,25 +94,54 @@ const EventPage = () => {
 
     setIsSubmitting(true);
 
-    // Update event data with user's availability
-    const updatedResponses = {
-      ...eventData.responses,
-      [userName]: userAvailability,
-    };
+    // Insert or update vote in Supabase
+    const { error } = await supabase.from('votes').upsert([
+      {
+        event_id: id,
+        user_name: userName,
+        availability: userAvailability,
+      },
+    ]);
 
-    const updatedEventData = {
-      ...eventData,
-      responses: updatedResponses,
-    };
-
-    localStorage.setItem(`event_${id}`, JSON.stringify(updatedEventData));
-    setEventData(updatedEventData);
+    if (error) {
+      toast({
+        title: 'Error submitting availability',
+        description: error.message,
+        variant: 'destructive',
+      });
+      setIsSubmitting(false);
+      return;
+    }
 
     toast({
       title: 'Availability submitted!',
       description: 'Your availability has been recorded successfully.',
     });
 
+    // Refetch event and votes
+    const { data, error: fetchError } = await supabase
+      .from('events')
+      .select('*')
+      .eq('id', id)
+      .single();
+    if (data) {
+      const { data: votesData } = await supabase
+        .from('votes')
+        .select('*')
+        .eq('event_id', id);
+      const responses: Record<string, Record<string, boolean>> = {};
+      if (votesData) {
+        votesData.forEach(
+          (vote: {
+            user_name: string;
+            availability: Record<string, boolean>;
+          }) => {
+            responses[vote.user_name] = vote.availability || {};
+          }
+        );
+      }
+      setEventData({ ...data, responses });
+    }
     setIsSubmitting(false);
   };
 
@@ -102,10 +149,10 @@ const EventPage = () => {
     if (!eventData) return [];
 
     const slots = [];
-    const startTime = parse(eventData.timeRange.start, 'HH:mm', new Date());
-    const endTime = parse(eventData.timeRange.end, 'HH:mm', new Date());
+    const startTime = parse(eventData.time_range.start, 'HH:mm', new Date());
+    const endTime = parse(eventData.time_range.end, 'HH:mm', new Date());
 
-    let currentTime = new Date(startTime);
+    const currentTime = new Date(startTime);
 
     while (currentTime < endTime) {
       const timeString = format(currentTime, 'HH:mm');
@@ -114,21 +161,6 @@ const EventPage = () => {
     }
 
     return slots;
-  };
-
-  const getAvailabilityCount = (dateStr: string, timeSlot: string) => {
-    if (!eventData) return 0;
-
-    const slotKey = `${dateStr}_${timeSlot}`;
-    let count = 0;
-
-    Object.values(eventData.responses).forEach((userResponse) => {
-      if (userResponse[slotKey]) {
-        count++;
-      }
-    });
-
-    return count;
   };
 
   const totalParticipants = eventData
@@ -169,7 +201,7 @@ const EventPage = () => {
   // Prepare columns for the grid
   let gridColumns: string[] = [];
   const gridMode: 'specific' | 'weekly' = eventData.mode || 'specific';
-  if (gridMode === 'weekly' && eventData.daysOfWeek) {
+  if (gridMode === 'weekly' && eventData.days_of_week) {
     // Map daysOfWeek numbers to day names (e.g., 1 -> 'Monday')
     const dayNames = [
       'Sunday',
@@ -180,7 +212,7 @@ const EventPage = () => {
       'Friday',
       'Saturday',
     ];
-    gridColumns = eventData.daysOfWeek.map((d) => dayNames[d]);
+    gridColumns = eventData.days_of_week.map((d) => dayNames[d]);
   } else {
     gridColumns = eventData.dates;
   }
@@ -207,10 +239,6 @@ const EventPage = () => {
                 <Users className='w-3 h-3' />
                 {totalParticipants} participant
                 {totalParticipants !== 1 ? 's' : ''}
-              </Badge>
-              <Badge variant='outline'>
-                {eventData.dates.length} date
-                {eventData.dates.length !== 1 ? 's' : ''}
               </Badge>
             </div>
           </div>
@@ -269,26 +297,52 @@ const EventPage = () => {
               <CardContent className='space-y-2'>
                 <div>
                   <strong>Time Range:</strong>{' '}
-                  {format(
-                    parse(eventData.timeRange.start, 'HH:mm', new Date()),
-                    'h:mm a'
-                  )}{' '}
+                  {eventData.time_range &&
+                    format(
+                      parse(eventData.time_range.start, 'HH:mm', new Date()),
+                      'h:mm a'
+                    )}{' '}
                   -{' '}
-                  {format(
-                    parse(eventData.timeRange.end, 'HH:mm', new Date()),
-                    'h:mm a'
-                  )}
+                  {eventData.time_range &&
+                    format(
+                      parse(eventData.time_range.end, 'HH:mm', new Date()),
+                      'h:mm a'
+                    )}
                 </div>
-                <div>
-                  <strong>Dates:</strong>
-                  <div className='flex flex-wrap gap-1 mt-1'>
-                    {eventData.dates.map((dateStr, index) => (
-                      <Badge key={index} variant='outline'>
-                        {format(new Date(dateStr), 'MMM d, yyyy')}
-                      </Badge>
-                    ))}
+                {eventData.mode === 'specific' && (
+                  <div>
+                    <strong>Dates:</strong>
+                    <div className='flex flex-wrap gap-1 mt-1'>
+                      {eventData.dates.map((dateStr, index) => (
+                        <Badge key={index} variant='outline'>
+                          {format(new Date(dateStr), 'MMM d, yyyy')}
+                        </Badge>
+                      ))}
+                    </div>
                   </div>
-                </div>
+                )}
+                {eventData.mode === 'weekly' && (
+                  <div>
+                    <strong>Days of Week:</strong>
+                    <div className='flex flex-wrap gap-1 mt-1'>
+                      {eventData.days_of_week.map((day) => (
+                        <Badge key={day} variant='outline'>
+                          {
+                            [
+                              'Sunday',
+                              'Monday',
+                              'Tuesday',
+                              'Wednesday',
+                              'Thursday',
+                              'Friday',
+                              'Saturday',
+                            ][day]
+                          }
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
