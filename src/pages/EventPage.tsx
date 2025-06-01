@@ -41,6 +41,7 @@ const EventPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [hasSubmitted, setHasSubmitted] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
 
   useEffect(() => {
     const fetchEvent = async () => {
@@ -227,8 +228,12 @@ const EventPage = () => {
   }
 
   return (
-    <div className='min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50'>
-      <div className='container mx-auto px-4 py-8'>
+    <div
+      className={`h-screen overflow-x-hidden ${
+        isDragging ? 'overflow-y-hidden' : 'overflow-y-auto'
+      } bg-gradient-to-br from-blue-50 via-white to-green-50`}
+    >
+      <div className='container mx-auto  px-4 py-8'>
         {/* Header */}
         <div className='flex items-center justify-between mb-8'>
           <div>
@@ -445,6 +450,7 @@ const EventPage = () => {
                           ? eventData?.responses || {}
                           : { [userName]: userAvailability }
                       }
+                      setIsDragging={setIsDragging}
                       userAvailability={userAvailability}
                       onAvailabilityChange={setUserAvailability}
                       isReadOnly={

@@ -12,6 +12,7 @@ import {
 interface AvailabilityGridProps {
   mode?: 'specific' | 'weekly';
   dates: string[];
+  setIsDragging: (isDragging: boolean) => void;
   timeSlots: string[];
   responses: Record<string, Record<string, boolean>>;
   userAvailability: Record<string, boolean>;
@@ -27,9 +28,9 @@ interface TimeSlotProps {
   count: number;
   totalParticipants: number;
   availableUsers: string[];
-  onToggle: (dateStr: string, timeSlot: string) => void;
   isReadOnly?: boolean;
   hasSubmitted?: boolean;
+  className?: string;
 }
 
 const TimeSlot = ({
@@ -39,9 +40,9 @@ const TimeSlot = ({
   count,
   totalParticipants,
   availableUsers,
-  onToggle,
   isReadOnly,
   hasSubmitted,
+  className,
 }: TimeSlotProps) => {
   const getHeatmapColor = (
     count: number,
@@ -68,12 +69,7 @@ const TimeSlot = ({
     return 'bg-gray-50 hover:bg-gray-100';
   };
 
-  const formatTimeSlot = (timeSlot: string) => {
-    return format(parse(timeSlot, 'HH:mm', new Date()), 'h a');
-  };
-
   const heatmapColor = getHeatmapColor(count, totalParticipants, isSelected);
-  console.log('has', isReadOnly, hasSubmitted);
   return (
     <Tooltip>
       <TooltipTrigger asChild>
@@ -81,9 +77,9 @@ const TimeSlot = ({
           className={cn(
             'h-full cursor-pointer transition-all duration-200 border-r border-gray-200 last:border-r-0 flex items-center justify-center relative selecto-item',
             heatmapColor,
-            isSelected && 'ring-2 ring-green-600 ring-inset'
+            isSelected && 'ring-2 ring-green-600 ring-inset',
+            className
           )}
-          onClick={() => onToggle(dateStr, timeSlot)}
           data-date={dateStr}
           data-time={timeSlot}
         >
@@ -128,8 +124,8 @@ const AvailabilityGrid = ({
   onAvailabilityChange,
   isReadOnly = false,
   hasSubmitted = false,
+  setIsDragging,
 }: AvailabilityGridProps) => {
-  console.log(timeSlots, dates);
   const containerRef = useRef<HTMLDivElement>(null);
   const getSlotKey = (dateStr: string, timeSlot: string) =>
     mode === 'weekly' ? `${dateStr}_${timeSlot}` : `${dateStr}_${timeSlot}`;
@@ -151,26 +147,15 @@ const AvailabilityGrid = ({
 
   const getTotalParticipants = () => Object.keys(responses).length;
 
-  const handleSlotToggle = useCallback(
-    (dateStr: string, timeSlot: string) => {
-      if (isReadOnly) return;
-      const slotKey = getSlotKey(dateStr, timeSlot);
-      const newAvailability = {
-        ...userAvailability,
-        [slotKey]: !userAvailability[slotKey],
-      };
-      onAvailabilityChange(newAvailability);
-    },
-    [userAvailability, onAvailabilityChange, isReadOnly]
-  );
-
   const handleSelect = useCallback(
-    (e: SelectoEvents['select']) => {
+    (e: SelectoEvents['selectEnd']) => {
       if (isReadOnly) return;
       const newAvailability = { ...userAvailability };
-
       // For single click selections
-      if (e.inputEvent && e.inputEvent.type === 'click') {
+      if (
+        (e.inputEvent && e.inputEvent.type === 'mouseup') ||
+        (e.inputEvent && e.inputEvent.type === 'touchend')
+      ) {
         e.selected.forEach((el: HTMLElement) => {
           const dateStr = el.dataset.date;
           const timeSlot = el.dataset.time;
@@ -203,7 +188,7 @@ const AvailabilityGrid = ({
 
   return (
     <TooltipProvider>
-      <div className='overflow-auto bg-white' ref={containerRef}>
+      <div className='overflow-x-auto bg-white' ref={containerRef}>
         <Selecto
           container={containerRef.current}
           selectableTargets={['.selecto-item']}
@@ -212,9 +197,17 @@ const AvailabilityGrid = ({
           continueSelect={false}
           toggleContinueSelect={'shift'}
           hitRate={0}
-          onSelect={handleSelect}
+          onSelectEnd={(e) => {
+            handleSelect(e);
+          }}
+          onDragStart={() => {
+            setIsDragging(true);
+          }}
+          onDragEnd={() => {
+            setIsDragging(false);
+          }}
         />
-        <div className='border border-gray-200 rounded-lg'>
+        <div className='border border-gray-200 rounded-lg min-w-[350px] sm:min-w-0'>
           {/* Header Row */}
           <div
             className='grid border-b border-gray-200'
@@ -277,9 +270,9 @@ const AvailabilityGrid = ({
                     count={count}
                     totalParticipants={totalParticipants}
                     availableUsers={availableUsers}
-                    onToggle={handleSlotToggle}
                     isReadOnly={isReadOnly}
                     hasSubmitted={hasSubmitted}
+                    className='min-h-[40px] min-w-[40px] touch-manipulation'
                   />
                 );
               })}

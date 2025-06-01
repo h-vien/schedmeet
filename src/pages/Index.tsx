@@ -158,7 +158,15 @@ const Index = () => {
   };
 
   return (
-    <div className='min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50'>
+    <div className='relative min-h-screen overflow-hidden'>
+      {/* Animated Background */}
+      <div className='absolute inset-0 -z-10 animate-gradient bg-gradient-to-br from-blue-200 via-green-100 to-purple-200 opacity-80' />
+      {/* Optionally, add floating shapes */}
+      <div className='pointer-events-none absolute inset-0 -z-10'>
+        <div className='absolute left-10 top-10 w-32 h-32 bg-blue-300 rounded-full opacity-30 animate-float-slow' />
+        <div className='absolute right-20 top-1/3 w-24 h-24 bg-green-300 rounded-full opacity-20 animate-float-medium' />
+        <div className='absolute left-1/2 bottom-10 w-40 h-40 bg-purple-300 rounded-full opacity-20 animate-float-fast' />
+      </div>
       <div className='container mx-auto px-4 py-16'>
         {/* Header */}
         <div className='text-center mb-16 animate-fade-in'>
@@ -190,10 +198,7 @@ const Index = () => {
           <div className='text-center p-6 rounded-lg bg-white/50 backdrop-blur-sm border border-white/20 hover:bg-white/70 transition-all duration-300 hover:scale-105'>
             <Share2 className='w-12 h-12 mx-auto mb-4 text-purple-600' />
             <h3 className='text-lg font-semibold mb-2'>Easy Sharing</h3>
-            <p className='text-gray-600'>
-              Share your poll with a simple link and optional password
-              protection
-            </p>
+            <p className='text-gray-600'>Share your poll with a simple link</p>
           </div>
         </div>
 
