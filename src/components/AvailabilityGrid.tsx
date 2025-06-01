@@ -2,6 +2,7 @@
 import { useState, useCallback } from 'react';
 import { format, parse } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface AvailabilityGridProps {
   dates: string[];
@@ -24,34 +25,42 @@ const AvailabilityGrid = ({
 
   const getSlotKey = (dateStr: string, timeSlot: string) => `${dateStr}_${timeSlot}`;
 
-  const getAvailabilityCount = (dateStr: string, timeSlot: string) => {
+  const getAvailabilityData = (dateStr: string, timeSlot: string) => {
     const slotKey = getSlotKey(dateStr, timeSlot);
+    const availableUsers: string[] = [];
     let count = 0;
     
-    Object.values(responses).forEach(userResponse => {
+    Object.entries(responses).forEach(([userName, userResponse]) => {
       if (userResponse[slotKey]) {
         count++;
+        availableUsers.push(userName);
       }
     });
     
-    return count;
+    return { count, availableUsers };
   };
 
   const getTotalParticipants = () => Object.keys(responses).length;
 
   const getHeatmapColor = (count: number, total: number, isUserSelected: boolean) => {
-    if (isUserSelected) {
-      return 'bg-blue-500 border-blue-600';
-    }
-    
-    if (total === 0) return 'bg-gray-100 border-gray-200';
+    if (total === 0) return 'bg-gray-50 hover:bg-gray-100';
     
     const ratio = count / total;
-    if (ratio >= 0.8) return 'bg-green-400 border-green-500';
-    if (ratio >= 0.6) return 'bg-green-300 border-green-400';
-    if (ratio >= 0.4) return 'bg-yellow-300 border-yellow-400';
-    if (ratio >= 0.2) return 'bg-orange-300 border-orange-400';
-    return 'bg-red-200 border-red-300';
+    
+    if (isUserSelected) {
+      if (ratio >= 0.8) return 'bg-green-600 border-green-700';
+      if (ratio >= 0.6) return 'bg-green-500 border-green-600';
+      if (ratio >= 0.4) return 'bg-green-400 border-green-500';
+      if (ratio >= 0.2) return 'bg-green-300 border-green-400';
+      return 'bg-green-200 border-green-300';
+    }
+    
+    if (ratio >= 0.8) return 'bg-green-500 hover:bg-green-600';
+    if (ratio >= 0.6) return 'bg-green-400 hover:bg-green-500';
+    if (ratio >= 0.4) return 'bg-green-300 hover:bg-green-400';
+    if (ratio >= 0.2) return 'bg-green-200 hover:bg-green-300';
+    if (ratio > 0) return 'bg-green-100 hover:bg-green-200';
+    return 'bg-gray-50 hover:bg-gray-100';
   };
 
   const getSlotsBetween = (startSlot: string, endSlot: string) => {
@@ -106,7 +115,6 @@ const AvailabilityGrid = ({
     const newAvailability = { ...userAvailability };
     const shouldSelect = dragMode === 'select';
     
-    // Update all slots in the drag range
     slotsInRange.forEach(slot => {
       newAvailability[slot] = shouldSelect;
     });
@@ -120,96 +128,125 @@ const AvailabilityGrid = ({
   };
 
   const formatTimeSlot = (timeSlot: string) => {
-    return format(parse(timeSlot, 'HH:mm', new Date()), 'h:mm a');
+    return format(parse(timeSlot, 'HH:mm', new Date()), 'h a');
   };
 
   const totalParticipants = getTotalParticipants();
 
   return (
-    <div className="overflow-auto" onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp}>
-      <div className="grid gap-2 min-w-fit">
-        {/* Header Row */}
-        <div className="grid gap-1" style={{ gridTemplateColumns: `80px repeat(${dates.length}, 120px)` }}>
-          <div className="h-16"></div>
-          {dates.map((dateStr, index) => (
-            <div key={index} className="text-center p-2 font-medium text-sm">
-              <div>{format(new Date(dateStr), 'EEE')}</div>
-              <div className="text-xs text-gray-600">{format(new Date(dateStr), 'MMM d')}</div>
+    <TooltipProvider>
+      <div className="overflow-auto bg-white" onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp}>
+        <div className="border border-gray-200 rounded-lg">
+          {/* Header Row */}
+          <div className="grid border-b border-gray-200" style={{ gridTemplateColumns: `100px repeat(${dates.length}, 1fr)` }}>
+            <div className="p-4 bg-gray-50 border-r border-gray-200"></div>
+            {dates.map((dateStr, index) => (
+              <div key={index} className="p-4 text-center bg-gray-50 border-r border-gray-200 last:border-r-0">
+                <div className="font-medium text-gray-900">
+                  {format(new Date(dateStr), 'MMM d')}
+                </div>
+                <div className="text-sm text-gray-600">
+                  {format(new Date(dateStr), 'EEE')}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Time Slots */}
+          {timeSlots.map((timeSlot, timeIndex) => (
+            <div 
+              key={timeSlot} 
+              className={cn(
+                "grid border-b border-gray-200 last:border-b-0",
+                timeIndex % 2 === 0 ? "bg-gray-25" : "bg-white"
+              )}
+              style={{ gridTemplateColumns: `100px repeat(${dates.length}, 1fr)` }}
+            >
+              {/* Time Label */}
+              <div className="p-4 text-sm font-medium text-gray-700 bg-gray-50 border-r border-gray-200 flex items-center">
+                {formatTimeSlot(timeSlot)}
+              </div>
+              
+              {/* Date Slots */}
+              {dates.map((dateStr, dateIndex) => {
+                const slotKey = getSlotKey(dateStr, timeSlot);
+                const isUserSelected = userAvailability[slotKey];
+                const { count, availableUsers } = getAvailabilityData(dateStr, timeSlot);
+                const heatmapColor = getHeatmapColor(count, totalParticipants, isUserSelected);
+                
+                return (
+                  <Tooltip key={slotKey}>
+                    <TooltipTrigger asChild>
+                      <div
+                        className={cn(
+                          "h-16 cursor-pointer transition-all duration-200 border-r border-gray-200 last:border-r-0 flex items-center justify-center relative",
+                          heatmapColor,
+                          isDragging && "pointer-events-none",
+                          isUserSelected && "ring-2 ring-green-600 ring-inset"
+                        )}
+                        onMouseDown={() => handleMouseDown(dateStr, timeSlot)}
+                        onMouseEnter={() => handleMouseEnter(dateStr, timeSlot)}
+                      >
+                        {isUserSelected && (
+                          <div className="absolute inset-0 border-2 border-dashed border-green-800 m-1 rounded"></div>
+                        )}
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="max-w-xs">
+                      <div className="text-sm">
+                        <div className="font-medium mb-1">
+                          {format(new Date(dateStr), 'EEE, MMM d')} at {formatTimeSlot(timeSlot)}
+                        </div>
+                        {count > 0 ? (
+                          <div>
+                            <div className="text-xs text-gray-600 mb-1">
+                              {count} of {totalParticipants} available:
+                            </div>
+                            <div className="space-y-1">
+                              {availableUsers.map(user => (
+                                <div key={user} className="text-xs">
+                                  • {user}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="text-xs text-gray-500">
+                            No one available
+                          </div>
+                        )}
+                      </div>
+                    </TooltipContent>
+                  </Tooltip>
+                );
+              })}
             </div>
           ))}
         </div>
 
-        {/* Time Slots */}
-        {timeSlots.map((timeSlot) => (
-          <div 
-            key={timeSlot} 
-            className="grid gap-1" 
-            style={{ gridTemplateColumns: `80px repeat(${dates.length}, 120px)` }}
-          >
-            {/* Time Label */}
-            <div className="text-xs text-gray-600 p-2 text-right font-medium">
-              {formatTimeSlot(timeSlot)}
+        {/* Legend */}
+        <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+          <h4 className="text-sm font-medium mb-3">How to use:</h4>
+          <div className="space-y-2 text-sm">
+            <div className="flex items-center gap-3">
+              <div className="w-4 h-4 bg-green-600 border-2 border-dashed border-green-800 rounded"></div>
+              <span>Your selection (dashed border)</span>
             </div>
-            
-            {/* Date Slots */}
-            {dates.map((dateStr) => {
-              const slotKey = getSlotKey(dateStr, timeSlot);
-              const isUserSelected = userAvailability[slotKey];
-              const availabilityCount = getAvailabilityCount(dateStr, timeSlot);
-              const heatmapColor = getHeatmapColor(availabilityCount, totalParticipants, isUserSelected);
-              
-              return (
-                <div
-                  key={slotKey}
-                  className={cn(
-                    "h-8 border-2 cursor-pointer transition-all duration-150 rounded flex items-center justify-center text-xs font-medium hover:scale-105 select-none",
-                    heatmapColor,
-                    isDragging && "pointer-events-none"
-                  )}
-                  onMouseDown={() => handleMouseDown(dateStr, timeSlot)}
-                  onMouseEnter={() => handleMouseEnter(dateStr, timeSlot)}
-                >
-                  {availabilityCount > 0 && (
-                    <span className={cn(
-                      "text-xs font-bold",
-                      isUserSelected ? "text-white" : "text-gray-700"
-                    )}>
-                      {availabilityCount}
-                    </span>
-                  )}
-                </div>
-              );
-            })}
+            <div className="flex items-center gap-3">
+              <div className="w-4 h-4 bg-green-500 rounded"></div>
+              <span>High availability (many people available)</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="w-4 h-4 bg-green-200 rounded"></div>
+              <span>Low availability (few people available)</span>
+            </div>
           </div>
-        ))}
-      </div>
-
-      {/* Legend */}
-      <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-        <h4 className="text-sm font-medium mb-2">Legend:</h4>
-        <div className="flex flex-wrap gap-4 text-xs">
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 bg-blue-500 border-2 border-blue-600 rounded"></div>
-            <span>Your selection</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 bg-green-400 border-2 border-green-500 rounded"></div>
-            <span>High availability (80%+)</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 bg-yellow-300 border-2 border-yellow-400 rounded"></div>
-            <span>Medium availability (40-60%)</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 bg-red-200 border-2 border-red-300 rounded"></div>
-            <span>Low availability (0-20%)</span>
-          </div>
+          <p className="text-xs text-gray-600 mt-3">
+            Click and drag to select multiple time slots. Hover over any slot to see who's available.
+          </p>
         </div>
-        <p className="text-xs text-gray-600 mt-2">
-          Numbers show how many people are available for each time slot. Click and drag to select multiple slots at once.
-        </p>
       </div>
-    </div>
+    </TooltipProvider>
   );
 };
 
