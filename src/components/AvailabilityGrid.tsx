@@ -20,6 +20,7 @@ const AvailabilityGrid = ({
 }: AvailabilityGridProps) => {
   const [isDragging, setIsDragging] = useState(false);
   const [dragMode, setDragMode] = useState<'select' | 'deselect'>('select');
+  const [dragStartSlot, setDragStartSlot] = useState<string | null>(null);
 
   const getSlotKey = (dateStr: string, timeSlot: string) => `${dateStr}_${timeSlot}`;
 
@@ -53,6 +54,31 @@ const AvailabilityGrid = ({
     return 'bg-red-200 border-red-300';
   };
 
+  const getSlotsBetween = (startSlot: string, endSlot: string) => {
+    const [startDate, startTime] = startSlot.split('_');
+    const [endDate, endTime] = endSlot.split('_');
+    
+    const startDateIndex = dates.indexOf(startDate);
+    const endDateIndex = dates.indexOf(endDate);
+    const startTimeIndex = timeSlots.indexOf(startTime);
+    const endTimeIndex = timeSlots.indexOf(endTime);
+    
+    const minDateIndex = Math.min(startDateIndex, endDateIndex);
+    const maxDateIndex = Math.max(startDateIndex, endDateIndex);
+    const minTimeIndex = Math.min(startTimeIndex, endTimeIndex);
+    const maxTimeIndex = Math.max(startTimeIndex, endTimeIndex);
+    
+    const selectedSlots: string[] = [];
+    
+    for (let dateIndex = minDateIndex; dateIndex <= maxDateIndex; dateIndex++) {
+      for (let timeIndex = minTimeIndex; timeIndex <= maxTimeIndex; timeIndex++) {
+        selectedSlots.push(getSlotKey(dates[dateIndex], timeSlots[timeIndex]));
+      }
+    }
+    
+    return selectedSlots;
+  };
+
   const handleSlotToggle = useCallback((dateStr: string, timeSlot: string) => {
     const slotKey = getSlotKey(dateStr, timeSlot);
     const newAvailability = {
@@ -67,26 +93,30 @@ const AvailabilityGrid = ({
     const currentState = userAvailability[slotKey];
     setDragMode(currentState ? 'deselect' : 'select');
     setIsDragging(true);
+    setDragStartSlot(slotKey);
     handleSlotToggle(dateStr, timeSlot);
   };
 
   const handleMouseEnter = (dateStr: string, timeSlot: string) => {
-    if (!isDragging) return;
+    if (!isDragging || !dragStartSlot) return;
     
-    const slotKey = getSlotKey(dateStr, timeSlot);
+    const currentSlot = getSlotKey(dateStr, timeSlot);
+    const slotsInRange = getSlotsBetween(dragStartSlot, currentSlot);
+    
+    const newAvailability = { ...userAvailability };
     const shouldSelect = dragMode === 'select';
     
-    if (userAvailability[slotKey] !== shouldSelect) {
-      const newAvailability = {
-        ...userAvailability,
-        [slotKey]: shouldSelect
-      };
-      onAvailabilityChange(newAvailability);
-    }
+    // Update all slots in the drag range
+    slotsInRange.forEach(slot => {
+      newAvailability[slot] = shouldSelect;
+    });
+    
+    onAvailabilityChange(newAvailability);
   };
 
   const handleMouseUp = () => {
     setIsDragging(false);
+    setDragStartSlot(null);
   };
 
   const formatTimeSlot = (timeSlot: string) => {
@@ -176,7 +206,7 @@ const AvailabilityGrid = ({
           </div>
         </div>
         <p className="text-xs text-gray-600 mt-2">
-          Numbers show how many people are available for each time slot.
+          Numbers show how many people are available for each time slot. Click and drag to select multiple slots at once.
         </p>
       </div>
     </div>
