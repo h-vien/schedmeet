@@ -16,6 +16,8 @@ interface AvailabilityGridProps {
   responses: Record<string, Record<string, boolean>>;
   userAvailability: Record<string, boolean>;
   onAvailabilityChange: (availability: Record<string, boolean>) => void;
+  isReadOnly?: boolean;
+  hasSubmitted?: boolean;
 }
 
 interface TimeSlotProps {
@@ -26,6 +28,8 @@ interface TimeSlotProps {
   totalParticipants: number;
   availableUsers: string[];
   onToggle: (dateStr: string, timeSlot: string) => void;
+  isReadOnly?: boolean;
+  hasSubmitted?: boolean;
 }
 
 const TimeSlot = ({
@@ -36,6 +40,8 @@ const TimeSlot = ({
   totalParticipants,
   availableUsers,
   onToggle,
+  isReadOnly,
+  hasSubmitted,
 }: TimeSlotProps) => {
   const getHeatmapColor = (
     count: number,
@@ -67,7 +73,7 @@ const TimeSlot = ({
   };
 
   const heatmapColor = getHeatmapColor(count, totalParticipants, isSelected);
-
+  console.log('has', isReadOnly, hasSubmitted);
   return (
     <Tooltip>
       <TooltipTrigger asChild>
@@ -81,8 +87,8 @@ const TimeSlot = ({
           data-date={dateStr}
           data-time={timeSlot}
         >
-          {isSelected && (
-            <div className='w-full h-full bg-green-500 border-green-800 rounded'></div>
+          {isSelected && !isReadOnly && !hasSubmitted && (
+            <div className='w-full h-full border-dashed border border-black bg-green-400 rounded'></div>
           )}
         </div>
       </TooltipTrigger>
@@ -120,6 +126,8 @@ const AvailabilityGrid = ({
   responses,
   userAvailability,
   onAvailabilityChange,
+  isReadOnly = false,
+  hasSubmitted = false,
 }: AvailabilityGridProps) => {
   console.log(timeSlots, dates);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -145,6 +153,7 @@ const AvailabilityGrid = ({
 
   const handleSlotToggle = useCallback(
     (dateStr: string, timeSlot: string) => {
+      if (isReadOnly) return;
       const slotKey = getSlotKey(dateStr, timeSlot);
       const newAvailability = {
         ...userAvailability,
@@ -152,11 +161,12 @@ const AvailabilityGrid = ({
       };
       onAvailabilityChange(newAvailability);
     },
-    [userAvailability, onAvailabilityChange]
+    [userAvailability, onAvailabilityChange, isReadOnly]
   );
 
   const handleSelect = useCallback(
     (e: SelectoEvents['select']) => {
+      if (isReadOnly) return;
       const newAvailability = { ...userAvailability };
 
       // For single click selections
@@ -183,7 +193,7 @@ const AvailabilityGrid = ({
 
       onAvailabilityChange(newAvailability);
     },
-    [userAvailability, onAvailabilityChange]
+    [userAvailability, onAvailabilityChange, isReadOnly]
   );
 
   const totalParticipants = getTotalParticipants();
@@ -268,6 +278,8 @@ const AvailabilityGrid = ({
                     totalParticipants={totalParticipants}
                     availableUsers={availableUsers}
                     onToggle={handleSlotToggle}
+                    isReadOnly={isReadOnly}
+                    hasSubmitted={hasSubmitted}
                   />
                 );
               })}

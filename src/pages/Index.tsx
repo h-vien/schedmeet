@@ -163,7 +163,7 @@ const Index = () => {
         {/* Header */}
         <div className='text-center mb-16 animate-fade-in'>
           <h1 className='text-5xl font-bold bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent mb-4'>
-            When2Meet
+            ShedMeet
           </h1>
           <p className='text-xl text-gray-600 max-w-2xl mx-auto'>
             Find the perfect time when everyone is available. Create your
@@ -289,26 +289,22 @@ const Index = () => {
                   )}
                 </TabsContent>
                 <TabsContent value='weekly'>
-                  <div className='grid grid-cols-2 gap-2 p-2'>
+                  <div className='flex justify-center gap-0.5 my-2'>
                     {DAYS_OF_WEEK.map((day) => (
-                      <div
+                      <button
                         key={day.value}
-                        className='flex items-center space-x-2'
+                        type='button'
+                        className={cn(
+                          'px-4 py-2 border border-gray-300 text-sm font-medium rounded-none first:rounded-l last:rounded-r focus:outline-none',
+                          selectedDaysOfWeek.includes(day.value)
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        )}
+                        onClick={() => handleDayOfWeekToggle(day.value)}
+                        aria-pressed={selectedDaysOfWeek.includes(day.value)}
                       >
-                        <Checkbox
-                          id={`day-${day.value}`}
-                          checked={selectedDaysOfWeek.includes(day.value)}
-                          onCheckedChange={() =>
-                            handleDayOfWeekToggle(day.value)
-                          }
-                        />
-                        <label
-                          htmlFor={`day-${day.value}`}
-                          className='text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70'
-                        >
-                          {day.label}
-                        </label>
-                      </div>
+                        {day.label.slice(0, 3)}
+                      </button>
                     ))}
                   </div>
                   {selectedDaysOfWeek.length > 0 && (

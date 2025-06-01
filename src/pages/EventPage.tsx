@@ -15,6 +15,7 @@ import { format, parse } from 'date-fns';
 import { toast } from '@/hooks/use-toast';
 import AvailabilityGrid from '@/components/AvailabilityGrid';
 import { supabase } from '@/lib/supabaseClient';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface EventData {
   id: string;
@@ -37,9 +38,13 @@ const EventPage = () => {
     Record<string, boolean>
   >({});
   const [hasEnteredName, setHasEnteredName] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isEditing, setIsEditing] = useState(false);
+  const [hasSubmitted, setHasSubmitted] = useState(false);
 
   useEffect(() => {
     const fetchEvent = async () => {
+      setIsLoading(true);
       if (id) {
         const { data, error } = await supabase
           .from('events')
@@ -67,6 +72,7 @@ const EventPage = () => {
           setEventData({ ...data, responses });
         }
       }
+      setIsLoading(false);
     };
     fetchEvent();
   }, [id]);
@@ -117,6 +123,9 @@ const EventPage = () => {
       title: 'Availability submitted!',
       description: 'Your availability has been recorded successfully.',
     });
+
+    setHasSubmitted(true);
+    setIsEditing(false);
 
     // Refetch event and votes
     const { data, error: fetchError } = await supabase
@@ -179,7 +188,7 @@ const EventPage = () => {
     setHasEnteredName(true);
   };
 
-  if (!eventData) {
+  if (!eventData && !isLoading) {
     return (
       <div className='min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-green-50'>
         <Card className='w-full max-w-md'>
@@ -200,8 +209,8 @@ const EventPage = () => {
 
   // Prepare columns for the grid
   let gridColumns: string[] = [];
-  const gridMode: 'specific' | 'weekly' = eventData.mode || 'specific';
-  if (gridMode === 'weekly' && eventData.days_of_week) {
+  const gridMode: 'specific' | 'weekly' = eventData?.mode || 'specific';
+  if (gridMode === 'weekly' && eventData?.days_of_week) {
     // Map daysOfWeek numbers to day names (e.g., 1 -> 'Monday')
     const dayNames = [
       'Sunday',
@@ -212,9 +221,9 @@ const EventPage = () => {
       'Friday',
       'Saturday',
     ];
-    gridColumns = eventData.days_of_week.map((d) => dayNames[d]);
+    gridColumns = eventData?.days_of_week.map((d) => dayNames[d]) || [];
   } else {
-    gridColumns = eventData.dates;
+    gridColumns = eventData?.dates || [];
   }
 
   return (
@@ -231,16 +240,31 @@ const EventPage = () => {
               <ArrowLeft className='w-4 h-4 mr-2' />
               Back to Home
             </Button>
-            <h1 className='text-3xl font-bold text-gray-900'>
-              {eventData.name}
-            </h1>
-            <div className='flex items-center gap-4 mt-2'>
-              <Badge variant='secondary' className='flex items-center gap-1'>
-                <Users className='w-3 h-3' />
-                {totalParticipants} participant
-                {totalParticipants !== 1 ? 's' : ''}
-              </Badge>
-            </div>
+            {isLoading ? (
+              <div className='space-y-2'>
+                <Skeleton className='h-8 w-64' />
+                <div className='flex items-center gap-4 mt-2'>
+                  <Skeleton className='h-6 w-32' />
+                  <Skeleton className='h-6 w-24' />
+                </div>
+              </div>
+            ) : (
+              <>
+                <h1 className='text-3xl font-bold text-gray-900'>
+                  {eventData?.name}
+                </h1>
+                <div className='flex items-center gap-4 mt-2'>
+                  <Badge
+                    variant='secondary'
+                    className='flex items-center gap-1'
+                  >
+                    <Users className='w-3 h-3' />
+                    {totalParticipants} participant
+                    {totalParticipants !== 1 ? 's' : ''}
+                  </Badge>
+                </div>
+              </>
+            )}
           </div>
           <Button onClick={handleShareUrl} variant='outline'>
             <Share2 className='w-4 h-4 mr-2' />
@@ -295,53 +319,76 @@ const EventPage = () => {
                 <CardTitle>Event Details</CardTitle>
               </CardHeader>
               <CardContent className='space-y-2'>
-                <div>
-                  <strong>Time Range:</strong>{' '}
-                  {eventData.time_range &&
-                    format(
-                      parse(eventData.time_range.start, 'HH:mm', new Date()),
-                      'h:mm a'
-                    )}{' '}
-                  -{' '}
-                  {eventData.time_range &&
-                    format(
-                      parse(eventData.time_range.end, 'HH:mm', new Date()),
-                      'h:mm a'
+                {isLoading ? (
+                  <div className='space-y-4'>
+                    <div className='space-y-2'>
+                      <Skeleton className='h-4 w-24' />
+                      <Skeleton className='h-4 w-48' />
+                    </div>
+                    <div className='space-y-2'>
+                      <Skeleton className='h-4 w-24' />
+                      <div className='flex flex-wrap gap-1'>
+                        <Skeleton className='h-6 w-24' />
+                        <Skeleton className='h-6 w-24' />
+                        <Skeleton className='h-6 w-24' />
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <div>
+                      <strong>Time Range:</strong>{' '}
+                      {eventData?.time_range &&
+                        format(
+                          parse(
+                            eventData.time_range.start,
+                            'HH:mm',
+                            new Date()
+                          ),
+                          'h:mm a'
+                        )}{' '}
+                      -{' '}
+                      {eventData?.time_range &&
+                        format(
+                          parse(eventData.time_range.end, 'HH:mm', new Date()),
+                          'h:mm a'
+                        )}
+                    </div>
+                    {eventData?.mode === 'specific' && (
+                      <div>
+                        <strong>Dates:</strong>
+                        <div className='flex flex-wrap gap-1 mt-1'>
+                          {eventData.dates.map((dateStr, index) => (
+                            <Badge key={index} variant='outline'>
+                              {format(new Date(dateStr), 'MMM d, yyyy')}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
                     )}
-                </div>
-                {eventData.mode === 'specific' && (
-                  <div>
-                    <strong>Dates:</strong>
-                    <div className='flex flex-wrap gap-1 mt-1'>
-                      {eventData.dates.map((dateStr, index) => (
-                        <Badge key={index} variant='outline'>
-                          {format(new Date(dateStr), 'MMM d, yyyy')}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                {eventData.mode === 'weekly' && (
-                  <div>
-                    <strong>Days of Week:</strong>
-                    <div className='flex flex-wrap gap-1 mt-1'>
-                      {eventData.days_of_week.map((day) => (
-                        <Badge key={day} variant='outline'>
-                          {
-                            [
-                              'Sunday',
-                              'Monday',
-                              'Tuesday',
-                              'Wednesday',
-                              'Thursday',
-                              'Friday',
-                              'Saturday',
-                            ][day]
-                          }
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
+                    {eventData?.mode === 'weekly' && (
+                      <div>
+                        <strong>Days of Week:</strong>
+                        <div className='flex flex-wrap gap-1 mt-1'>
+                          {eventData.days_of_week?.map((day) => (
+                            <Badge key={day} variant='outline'>
+                              {
+                                [
+                                  'Sunday',
+                                  'Monday',
+                                  'Tuesday',
+                                  'Wednesday',
+                                  'Thursday',
+                                  'Friday',
+                                  'Saturday',
+                                ][day]
+                              }
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </>
                 )}
               </CardContent>
             </Card>
@@ -359,19 +406,52 @@ const EventPage = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {hasEnteredName ? (
-                  <AvailabilityGrid
-                    mode={gridMode}
-                    dates={gridColumns}
-                    timeSlots={generateTimeSlots()}
-                    responses={eventData.responses}
-                    userAvailability={userAvailability}
-                    onAvailabilityChange={setUserAvailability}
-                  />
-                ) : (
-                  <div className='h-[400px] flex items-center justify-center text-gray-500'>
-                    Enter your name to start selecting availability
+                {isLoading ? (
+                  <div className='h-[400px] space-y-4'>
+                    <div className='flex justify-between'>
+                      <Skeleton className='h-6 w-24' />
+                      <Skeleton className='h-6 w-24' />
+                    </div>
+                    <div className='grid grid-cols-7 gap-1'>
+                      {Array.from({ length: 7 }).map((_, i) => (
+                        <Skeleton key={i} className='h-8' />
+                      ))}
+                    </div>
+                    <div className='grid grid-cols-7 gap-1'>
+                      {Array.from({ length: 28 }).map((_, i) => (
+                        <Skeleton key={i} className='h-8' />
+                      ))}
+                    </div>
                   </div>
+                ) : (
+                  <>
+                    {hasSubmitted && !isEditing && (
+                      <Button
+                        className='mb-4'
+                        onClick={() => setIsEditing(true)}
+                      >
+                        Edit
+                      </Button>
+                    )}
+                    <AvailabilityGrid
+                      mode={gridMode}
+                      dates={gridColumns}
+                      hasSubmitted={hasSubmitted}
+                      timeSlots={generateTimeSlots()}
+                      responses={
+                        !hasEnteredName
+                          ? eventData?.responses || {}
+                          : hasSubmitted && !isEditing
+                          ? eventData?.responses || {}
+                          : { [userName]: userAvailability }
+                      }
+                      userAvailability={userAvailability}
+                      onAvailabilityChange={setUserAvailability}
+                      isReadOnly={
+                        !hasEnteredName || (hasSubmitted && !isEditing)
+                      }
+                    />
+                  </>
                 )}
               </CardContent>
             </Card>
