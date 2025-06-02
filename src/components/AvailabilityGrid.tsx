@@ -297,11 +297,6 @@ const AvailabilityGrid = ({
               <span>Low availability (few people available)</span>
             </div>
           </div>
-          <p className='text-xs text-gray-600 mt-3'>
-            Click to select individual slots, or drag across multiple slots to
-            select them all at once. Hold Shift to select multiple areas. Hover
-            over any slot to see who's available.
-          </p>
         </div>
       </div>
     </TooltipProvider>
