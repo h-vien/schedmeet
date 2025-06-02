@@ -16,6 +16,7 @@ import { toast } from '@/hooks/use-toast';
 import AvailabilityGrid from '@/components/AvailabilityGrid';
 import { supabase } from '@/lib/supabaseClient';
 import { Skeleton } from '@/components/ui/skeleton';
+import { cn } from '@/lib/utils';
 
 interface EventData {
   id: string;
@@ -42,6 +43,7 @@ const EventPage = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [hasSubmitted, setHasSubmitted] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  const [userNameError, setUserNameError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchEvent = async () => {
@@ -87,11 +89,34 @@ const EventPage = () => {
     });
   };
 
+  const handleUserNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.trim();
+    if (value.length > 250) {
+      setUserNameError('Name cannot exceed 250 characters');
+    } else {
+      setUserNameError(null);
+    }
+    setUserName(e.target.value);
+  };
+
   const handleSubmitAvailability = async () => {
-    if (!userName.trim()) {
+    const sanitizedUserName = userName.trim();
+
+    if (!sanitizedUserName) {
+      setUserNameError('Name is required');
       toast({
         title: 'Name required',
         description: 'Please enter your name to submit availability.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (sanitizedUserName.length > 250) {
+      setUserNameError('Name cannot exceed 250 characters');
+      toast({
+        title: 'Invalid name',
+        description: 'Name cannot exceed 250 characters.',
         variant: 'destructive',
       });
       return;
@@ -105,7 +130,7 @@ const EventPage = () => {
     const { error } = await supabase.from('votes').upsert([
       {
         event_id: id,
-        user_name: userName,
+        user_name: sanitizedUserName,
         availability: userAvailability,
       },
     ]);
@@ -178,7 +203,10 @@ const EventPage = () => {
     : 0;
 
   const handleNameSubmit = () => {
-    if (!userName.trim()) {
+    const sanitizedUserName = userName.trim();
+
+    if (!sanitizedUserName) {
+      setUserNameError('Name is required');
       toast({
         title: 'Name required',
         description: 'Please enter your name to continue.',
@@ -186,6 +214,17 @@ const EventPage = () => {
       });
       return;
     }
+
+    if (sanitizedUserName.length > 250) {
+      setUserNameError('Name cannot exceed 250 characters');
+      toast({
+        title: 'Invalid name',
+        description: 'Name cannot exceed 250 characters.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setHasEnteredName(true);
   };
 
@@ -294,10 +333,21 @@ const EventPage = () => {
                   <Input
                     placeholder='Your name'
                     value={userName}
-                    onChange={(e) => setUserName(e.target.value)}
+                    onChange={handleUserNameChange}
                     disabled={hasEnteredName}
+                    className={cn(
+                      userNameError &&
+                        'border-red-500 focus-visible:ring-red-500'
+                    )}
+                    maxLength={250}
                   />
                 </div>
+                {userNameError && (
+                  <p className='text-sm text-red-500 mt-1'>{userNameError}</p>
+                )}
+                <p className='text-sm text-gray-500 mt-1'>
+                  {userName.length}/250 characters
+                </p>
                 {!hasEnteredName ? (
                   <Button
                     onClick={handleNameSubmit}
