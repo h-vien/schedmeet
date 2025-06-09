@@ -319,9 +319,9 @@ const Index = () => {
                         key={day.value}
                         type='button'
                         className={cn(
-                          'px-4 py-2 border border-gray-300 text-sm font-medium rounded-none first:rounded-l last:rounded-r focus:outline-none',
+                          'px-4 mt-4 py-2 border border-gray-300 text-sm font-medium rounded-none first:rounded-l last:rounded-r focus:outline-none',
                           selectedDaysOfWeek.includes(day.value)
-                            ? 'bg-blue-600 text-white'
+                            ? 'bg-emerald-600 text-white'
                             : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                         )}
                         onClick={() => handleDayOfWeekToggle(day.value)}
@@ -331,11 +331,6 @@ const Index = () => {
                       </button>
                     ))}
                   </div>
-                  {selectedDaysOfWeek.length > 0 && (
-                    <p className='text-sm text-gray-600 mt-2'>
-                      Will generate dates for the next 4 weeks
-                    </p>
-                  )}
                 </TabsContent>
               </Tabs>
             </div>
@@ -356,7 +351,7 @@ const Index = () => {
             {/* Create Button */}
             <Button
               onClick={handleCreateEvent}
-              className='w-full text-lg py-6 bg-gradient-to-r from-blue-600 to-green-600 hover:from-blue-700 hover:to-green-700 transition-all duration-300 shadow-lg hover:shadow-xl'
+              className='w-full text-lg py-6 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 transition-all duration-300 shadow-lg hover:shadow-xl'
             >
               Create Event
             </Button>

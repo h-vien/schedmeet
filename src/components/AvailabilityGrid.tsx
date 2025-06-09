@@ -19,6 +19,9 @@ interface AvailabilityGridProps {
   onAvailabilityChange: (availability: Record<string, boolean>) => void;
   isReadOnly?: boolean;
   hasSubmitted?: boolean;
+  isScheduling?: boolean;
+  scheduledSlot?: { date: string; time: string } | null;
+  setScheduledSlot?: (slot: { date: string; time: string }) => void;
 }
 
 interface TimeSlotProps {
@@ -125,6 +128,9 @@ const AvailabilityGrid = ({
   isReadOnly = false,
   hasSubmitted = false,
   setIsDragging,
+  isScheduling = false,
+  scheduledSlot = null,
+  setScheduledSlot,
 }: AvailabilityGridProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const getSlotKey = (dateStr: string, timeSlot: string) =>
@@ -147,9 +153,29 @@ const AvailabilityGrid = ({
 
   const getTotalParticipants = () => Object.keys(responses).length;
 
+  const onSchedule = useCallback(
+    (e: SelectoEvents['select']) => {
+      // Scheduling mode: only allow one slot selection
+      if (isScheduling && setScheduledSlot) {
+        if (e.selected.length === 1) {
+          const el = e.selected[0] as HTMLElement;
+          const dateStr = el.dataset.date;
+          const timeSlot = el.dataset.time;
+          if (dateStr && timeSlot) {
+            setScheduledSlot({ date: dateStr, time: timeSlot });
+          }
+        }
+        return;
+      }
+    },
+    [isScheduling, setScheduledSlot]
+  );
+
   const handleSelect = useCallback(
     (e: SelectoEvents['selectEnd']) => {
       if (isReadOnly) return;
+      if (isScheduling) return;
+
       const newAvailability = { ...userAvailability };
       // For single click selections
       if (
@@ -175,10 +201,16 @@ const AvailabilityGrid = ({
           }
         });
       }
-
       onAvailabilityChange(newAvailability);
     },
-    [userAvailability, onAvailabilityChange, isReadOnly]
+    [
+      isReadOnly,
+      isScheduling,
+      setScheduledSlot,
+      userAvailability,
+      onAvailabilityChange,
+      getSlotKey,
+    ]
   );
 
   const totalParticipants = getTotalParticipants();
@@ -197,6 +229,7 @@ const AvailabilityGrid = ({
           continueSelect={false}
           toggleContinueSelect={'shift'}
           hitRate={0}
+          onSelect={onSchedule}
           onSelectEnd={(e) => {
             handleSelect(e);
           }}
@@ -260,7 +293,12 @@ const AvailabilityGrid = ({
                   dateStr,
                   timeSlot
                 );
-
+                // Scheduling mode: highlight if this is the scheduled slot
+                const isScheduled =
+                  isScheduling &&
+                  scheduledSlot &&
+                  scheduledSlot.date === dateStr &&
+                  scheduledSlot.time === timeSlot;
                 return (
                   <TimeSlot
                     key={slotKey}
@@ -272,7 +310,10 @@ const AvailabilityGrid = ({
                     availableUsers={availableUsers}
                     isReadOnly={isReadOnly}
                     hasSubmitted={hasSubmitted}
-                    className='min-h-[40px] min-w-[40px] touch-manipulation'
+                    className={cn(
+                      'min-h-[40px] min-w-[40px] touch-manipulation',
+                      isScheduled && 'ring-2 ring-blue-500 ring-inset z-10'
+                    )}
                   />
                 );
               })}

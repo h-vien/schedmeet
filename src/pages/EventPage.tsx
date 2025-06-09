@@ -17,6 +17,7 @@ import AvailabilityGrid from '@/components/AvailabilityGrid';
 import { supabase } from '@/lib/supabaseClient';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
+import { Switch } from '@/components/ui/switch';
 
 interface EventData {
   id: string;
@@ -44,6 +45,12 @@ const EventPage = () => {
   const [hasSubmitted, setHasSubmitted] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [userNameError, setUserNameError] = useState<string | null>(null);
+  const [showBestOnly, setShowBestOnly] = useState(false);
+  const [isScheduling, setIsScheduling] = useState(false);
+  const [scheduledSlot, setScheduledSlot] = useState<{
+    date: string;
+    time: string;
+  } | null>(null);
 
   useEffect(() => {
     const fetchEvent = async () => {
@@ -228,6 +235,59 @@ const EventPage = () => {
     setHasEnteredName(true);
   };
 
+  // Helper to get best slots
+  function getBestTimes() {
+    if (!eventData) return [];
+    const slotCounts = {};
+    const slots = generateTimeSlots();
+    const dates = gridColumns;
+
+    // Count votes for each slot
+    for (const date of dates) {
+      for (const time of slots) {
+        const key = `${date}_${time}`;
+        let count = 0;
+        for (const user in eventData.responses) {
+          if (eventData.responses[user][key]) count++;
+        }
+        slotCounts[key] = count;
+      }
+    }
+
+    // Find max count
+    const max = Math.max(...(Object.values(slotCounts) as number[]));
+    if (max === 0) return [];
+
+    // Collect all slots with max count
+    const best = [];
+    for (const [key, count] of Object.entries(slotCounts)) {
+      if (count === max) {
+        const idx = key.lastIndexOf('_');
+        const date = key.slice(0, idx);
+        const time = key.slice(idx + 1);
+        best.push({ date, time, count });
+      }
+    }
+    return best;
+  }
+
+  // Helper to filter responses for best slots only
+  function filterResponsesForBestOnly(responses) {
+    const best = getBestTimes();
+    if (!best.length) return {};
+    const bestKeys = new Set(best.map((slot) => `${slot.date}_${slot.time}`));
+    const filtered = {};
+    for (const [user, userResp] of Object.entries(responses)) {
+      filtered[user] = {};
+      for (const key of Object.keys(userResp)) {
+        if (bestKeys.has(key)) {
+          filtered[user][key] = userResp[key];
+        }
+      }
+    }
+    return filtered;
+  }
+
   if (!eventData && !isLoading) {
     return (
       <div className='min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-green-50'>
@@ -265,6 +325,54 @@ const EventPage = () => {
   } else {
     gridColumns = eventData?.dates || [];
   }
+
+  const handleAddToCalendar = () => {
+    const dayNames = [
+      'Sunday',
+      'Monday',
+      'Tuesday',
+      'Wednesday',
+      'Thursday',
+      'Friday',
+      'Saturday',
+    ];
+    const dayIndex = dayNames.indexOf(scheduledSlot.date);
+
+    // Get current date and set to next occurrence of the selected day
+    const date = new Date();
+    const daysUntilNext = (dayIndex - date.getDay() + 7) % 7;
+    date.setDate(date.getDate() + daysUntilNext);
+
+    // Set the time
+    const [hours, minutes] = scheduledSlot.time.split(':');
+    date.setHours(parseInt(hours), parseInt(minutes));
+
+    // Create end time (1 hour later)
+    const endDate = new Date(date);
+    endDate.setHours(date.getHours() + 1);
+
+    // Base URL parameters
+    const baseParams = new URLSearchParams({
+      action: 'TEMPLATE',
+      text: eventData?.name || '',
+      dates: `${date.toISOString().replace(/-|:|\.\d+/g, '')}/${endDate
+        .toISOString()
+        .replace(/-|:|\.\d+/g, '')}`,
+    });
+
+    // Add recurrence rule for weekly events
+    if (eventData?.mode === 'weekly') {
+      baseParams.append(
+        'recur',
+        `RRULE:FREQ=WEEKLY;BYDAY=${scheduledSlot.date
+          .slice(0, 2)
+          .toUpperCase()}`
+      );
+    }
+
+    const googleCalendarUrl = `https://calendar.google.com/calendar/render?${baseParams.toString()}`;
+    window.open(googleCalendarUrl, '_blank');
+  };
 
   return (
     <div
@@ -488,13 +596,50 @@ const EventPage = () => {
                         Edit
                       </Button>
                     )}
+                    <div className='flex items-center mb-4 gap-2'>
+                      <Switch
+                        id='show-best-only'
+                        checked={showBestOnly}
+                        onCheckedChange={setShowBestOnly}
+                      />
+                      <label
+                        htmlFor='show-best-only'
+                        className='text-sm font-medium cursor-pointer'
+                      >
+                        Show only best time(s)
+                      </label>
+                    </div>
+                    <div className='flex items-center mb-4 gap-2 justify-between w-full'>
+                      <Button
+                        variant={isScheduling ? 'secondary' : 'default'}
+                        onClick={() => {
+                          setIsScheduling((prev) => !prev);
+                          setScheduledSlot(null);
+                        }}
+                      >
+                        {isScheduling ? 'Cancel Scheduling' : 'Schedule Event'}
+                      </Button>
+                      {isScheduling && scheduledSlot && (
+                        <Button onClick={handleAddToCalendar}>
+                          Add to Calendar
+                        </Button>
+                      )}
+                    </div>
                     <AvailabilityGrid
                       mode={gridMode}
                       dates={gridColumns}
                       hasSubmitted={hasSubmitted}
                       timeSlots={generateTimeSlots()}
                       responses={
-                        !hasEnteredName
+                        showBestOnly
+                          ? filterResponsesForBestOnly(
+                              !hasEnteredName
+                                ? eventData?.responses || {}
+                                : hasSubmitted && !isEditing
+                                ? eventData?.responses || {}
+                                : { [userName]: userAvailability }
+                            )
+                          : !hasEnteredName
                           ? eventData?.responses || {}
                           : hasSubmitted && !isEditing
                           ? eventData?.responses || {}
@@ -506,6 +651,9 @@ const EventPage = () => {
                       isReadOnly={
                         !hasEnteredName || (hasSubmitted && !isEditing)
                       }
+                      isScheduling={isScheduling}
+                      scheduledSlot={scheduledSlot}
+                      setScheduledSlot={setScheduledSlot}
                     />
                   </>
                 )}
