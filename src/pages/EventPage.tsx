@@ -18,6 +18,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { Switch } from "@/components/ui/switch";
+import { BuyMeACoffeeModal } from "@/components/BuyMeACoffeeModal";
 
 interface EventData {
   id: string;
@@ -418,14 +419,18 @@ const EventPage = () => {
               </>
             )}
           </div>
-          <Button
-            onClick={handleShareUrl}
-            variant="outline"
-            data-testid="share-button"
-          >
-            <Share2 className="w-4 h-4 mr-2" />
-            Share
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              onClick={handleShareUrl}
+              variant="outline"
+              data-testid="share-button"
+              className="mr-2"
+            >
+              <Share2 className="w-4 h-4 mr-2" />
+              Share
+            </Button>
+            <BuyMeACoffeeModal />
+          </div>
         </div>
 
         <div className="grid lg:grid-cols-3 gap-8">

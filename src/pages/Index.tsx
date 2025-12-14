@@ -1,8 +1,8 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { BuyMeACoffeeModal } from "@/components/BuyMeACoffeeModal";
+import { Particles } from "@/components/magicui/particles";
+import TimeRangeSelector from "@/components/TimeRangeSelector";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Calendar } from "@/components/ui/calendar";
 import {
   Card,
   CardContent,
@@ -10,35 +10,31 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Calendar } from "@/components/ui/calendar";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import {
-  CalendarIcon,
-  Clock,
-  Users,
-  Share2,
-  Calendar1,
-  Github,
-  Mail,
-} from "lucide-react";
-import {
-  format,
-  addDays,
-  startOfWeek,
-  endOfWeek,
-  eachDayOfInterval,
-} from "date-fns";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabaseClient";
 import { cn } from "@/lib/utils";
-import TimeRangeSelector from "@/components/TimeRangeSelector";
-import { toast } from "@/hooks/use-toast";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Particles } from "@/components/magicui/particles";
-import { ReviewSection } from "@/components/ReviewSection";
+import {
+  format
+} from "date-fns";
+import {
+  Calendar1,
+  CalendarIcon,
+  Clock,
+  Github,
+  Mail,
+  Share2,
+  Users,
+} from "lucide-react";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 const DAYS_OF_WEEK = [
   { value: 0, label: "Sunday" },
@@ -208,7 +204,7 @@ const Index = () => {
         <div className="flex justify-center mb-8">
           <Button
             variant="outline"
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 mr-2"
             data-testid="github-star-button"
             onClick={() =>
               window.open("https://github.com/h-vien/schedmeet", "_blank")
@@ -217,6 +213,7 @@ const Index = () => {
             <Github className="w-4 h-4" />
             Star on GitHub
           </Button>
+          <BuyMeACoffeeModal />
         </div>
 
         {/* Main Form */}
@@ -402,14 +399,16 @@ const Index = () => {
         {/* <ReviewSection /> */}
         <footer className="mt-16 py-8 border-t border-gray-200">
           <div className="container mx-auto px-4">
-            <div className="flex flex-col items-center gap-2 mb-4">
-              <a
-                href="mailto:contact@SchedMeet.com"
-                className="text-gray-600 hover:text-gray-900 transition-colors flex items-center gap-2"
-              >
-                <Mail className="w-4 h-4" />
-                hdhvien2002@gmail.com
-              </a>
+            <div className="flex flex-col items-center gap-4 mb-4">
+              <div className="flex items-center gap-4">
+                <a
+                  href="mailto:contact@SchedMeet.com"
+                  className="text-gray-600 hover:text-gray-900 transition-colors flex items-center gap-2"
+                >
+                  <Mail className="w-4 h-4" />
+                  hdhvien2002@gmail.com
+                </a>
+              </div>
             </div>
             <div className="text-gray-600 w-full text-center">
               <p className="!mb-0">
