@@ -1,5 +1,4 @@
 import { BuyMeACoffeeModal } from "@/components/BuyMeACoffeeModal";
-import { Particles } from "@/components/magicui/particles";
 import TimeRangeSelector from "@/components/TimeRangeSelector";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -49,7 +48,8 @@ const DAYS_OF_WEEK = [
 const Index = () => {
   const navigate = useNavigate();
   const [eventName, setEventName] = useState("");
-  const [selectedDates, setSelectedDates] = useState<Date[]>([]);
+  // Single selected date for "Specific Dates" mode
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [eventNameError, setEventNameError] = useState<string | null>(null);
 
   const [selectedDaysOfWeek, setSelectedDaysOfWeek] = useState<number[]>([]);
@@ -70,32 +70,6 @@ const Index = () => {
       setEventNameError(null);
     }
     setEventName(e.target.value);
-  };
-
-  const handleDateSelect = (date: Date | undefined) => {
-    if (!date) return;
-
-    setSelectedDates((prev) => {
-      const isAlreadySelected = prev.some(
-        (d) =>
-          d.getDate() === date.getDate() &&
-          d.getMonth() === date.getMonth() &&
-          d.getFullYear() === date.getFullYear()
-      );
-
-      if (isAlreadySelected) {
-        return prev.filter(
-          (d) =>
-            !(
-              d.getDate() === date.getDate() &&
-              d.getMonth() === date.getMonth() &&
-              d.getFullYear() === date.getFullYear()
-            )
-        );
-      } else {
-        return [...prev, date];
-      }
-    });
   };
 
   const handleDayOfWeekToggle = (dayValue: number) => {
@@ -132,15 +106,15 @@ const Index = () => {
     let daysOfWeek: number[] = [];
 
     if (dateSelectionMode === "specific") {
-      if (selectedDates.length === 0) {
+      if (!selectedDate) {
         toast({
           title: "Dates required",
-          description: "Please select at least one date for your event.",
+          description: "Please select a date for your event.",
           variant: "destructive",
         });
         return;
       }
-      dates = selectedDates.map((date) => date.toISOString().split("T")[0]);
+      dates = [selectedDate.toISOString().split("T")[0]];
     } else {
       if (selectedDaysOfWeek.length === 0) {
         toast({
@@ -187,44 +161,78 @@ const Index = () => {
   };
 
   return (
-    <div className="relative min-h-screen overflow-hidden ">
-      <div className="container mx-auto px-4 py-16">
-        {/* Header */}
-        <Particles className="absolute inset-0" color="#000000" />
-
-        <div className="text-center mb-16 animate-fade-in">
-          <h1 className="text-5xl font-bold bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent mb-4">
-            SchedMeet
-          </h1>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-            Find the perfect time when everyone is available. Create your
-            scheduling poll in seconds.
-          </p>
-        </div>
-        <div className="flex justify-center mb-8">
-          <Button
-            variant="outline"
-            className="flex items-center gap-2 mr-2"
-            data-testid="github-star-button"
-            onClick={() =>
-              window.open("https://github.com/h-vien/schedmeet", "_blank")
-            }
-          >
-            <Github className="w-4 h-4" />
-            Star on GitHub
-          </Button>
-          <BuyMeACoffeeModal />
-        </div>
-
-        {/* Main Form */}
-        <Card className="max-w-2xl mx-auto shadow-xl bg-white/80 backdrop-blur-sm border-white/20">
-          <CardHeader className="text-center">
-            <CardTitle className="text-2xl">Create Your Event</CardTitle>
-            <CardDescription>
-              Set up your scheduling poll and share it with others
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
+    <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-slate-50">
+      <div className="container mx-auto px-4 py-16 flex flex-col gap-16">
+        {/* Hero */}
+        <div className="grid gap-10 md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] items-center">
+          <div className="space-y-6">
+            <span className="inline-flex items-center rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-300 ring-1 ring-inset ring-emerald-500/30">
+              New · Plan meetings without back-and-forth
+            </span>
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-semibold tracking-tight">
+              The fastest way to{" "}
+              <span className="bg-gradient-to-r from-emerald-400 to-sky-400 bg-clip-text text-transparent">
+                find a time
+              </span>{" "}
+              that works.
+            </h1>
+            <p className="text-base md:text-lg text-slate-300 max-w-xl">
+              Create a scheduling poll, share a single link, and instantly see
+              when your team is free. No more DMs, spreadsheets, or timezone
+              confusion.
+            </p>
+            <div className="flex flex-wrap items-center gap-3">
+              <Button
+                variant="default"
+                className="bg-emerald-500 hover:bg-emerald-600 text-white px-6 md:px-8 py-2.5 md:py-3 text-sm md:text-base rounded-full shadow-lg shadow-emerald-500/30"
+                data-testid="primary-hero-button"
+                onClick={() => {
+                  const el = document.getElementById("create-event-card");
+                  if (el) {
+                    el.scrollIntoView({ behavior: "smooth", block: "start" });
+                  }
+                }}
+              >
+                Get started free
+              </Button>
+              <Button
+                variant="outline"
+                className="flex items-center gap-2 rounded-full border-slate-700 bg-slate-900/40 text-slate-100 hover:bg-slate-900"
+                data-testid="github-star-button"
+                onClick={() =>
+                  window.open("https://github.com/h-vien/schedmeet", "_blank")
+                }
+              >
+                <Github className="w-4 h-4" />
+                Star on GitHub
+              </Button>
+              <BuyMeACoffeeModal />
+            </div>
+            <div className="flex flex-wrap gap-4 text-xs md:text-sm text-slate-400">
+              <div className="inline-flex items-center gap-1.5">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                No login required for participants
+              </div>
+              <div className="inline-flex items-center gap-1.5">
+                <span className="h-1.5 w-1.5 rounded-full bg-sky-400" />
+                Works across timezones
+              </div>
+            </div>
+          </div>
+          <div className="relative">
+            <div className="absolute -inset-6 rounded-3xl bg-emerald-500/20 blur-3xl" />
+            {/* Main Form */}
+            <Card
+              id="create-event-card"
+              className="relative max-w-md ml-auto border-slate-800 bg-slate-900/80 shadow-2xl shadow-emerald-500/20"
+            >
+              <CardHeader className="text-center pb-4">
+                <CardTitle className="text-xl">Create your event</CardTitle>
+                <CardDescription className="text-slate-400">
+                  Set up a poll and share it in under a minute.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
             {/* Event Name */}
             <div className="space-y-2">
               <Label htmlFor="eventName">Event Name</Label>
@@ -270,26 +278,16 @@ const Index = () => {
                         variant="outline"
                         className={cn(
                           "w-full justify-start text-left font-normal h-auto py-3",
-                          !selectedDates.length && "text-muted-foreground"
+                          !selectedDate && "text-muted-foreground"
                         )}
                         data-testid="open-calendar-button"
                       >
                         <CalendarIcon className="mr-2 h-4 w-4" />
-                        {selectedDates.length > 0 ? (
+                        {selectedDate ? (
                           <div className="flex flex-wrap gap-1">
-                            {selectedDates.slice(0, 3).map((date, i) => (
-                              <span
-                                key={i}
-                                className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm"
-                              >
-                                {format(date, "MMM d")}
-                              </span>
-                            ))}
-                            {selectedDates.length > 3 && (
-                              <span className="text-sm text-gray-500">
-                                +{selectedDates.length - 3} more
-                              </span>
-                            )}
+                            <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm">
+                              {format(selectedDate, "MMM d")}
+                            </span>
                           </div>
                         ) : (
                           <span>Pick your dates</span>
@@ -298,24 +296,16 @@ const Index = () => {
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0" align="start">
                       <Calendar
-                        mode="multiple"
-                        selected={selectedDates}
-                        onSelect={(dates) => {
-                          if (dates) {
-                            setSelectedDates(dates);
-                          }
+                        mode="single"
+                        selected={selectedDate ?? undefined}
+                        onSelect={(date) => {
+                          setSelectedDate(date ?? null);
                         }}
                         className="pointer-events-auto"
                         disabled={(date) => date < new Date()}
                       />
                     </PopoverContent>
                   </Popover>
-                  {selectedDates.length > 0 && (
-                    <p className="text-sm text-gray-600">
-                      {selectedDates.length} date
-                      {selectedDates.length !== 1 ? "s" : ""} selected
-                    </p>
-                  )}
                 </TabsContent>
                 <TabsContent value="weekly">
                   <div className="flex justify-center gap-0.5 my-2">
@@ -357,64 +347,77 @@ const Index = () => {
             {/* Create Button */}
             <Button
               onClick={handleCreateEvent}
-              className="w-full text-lg py-6 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 transition-all duration-300 shadow-lg hover:shadow-xl"
+              className="w-full text-base py-4 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 transition-all duration-200 shadow-md hover:shadow-lg"
               data-testid="create-event-button"
             >
-              Create Event
+              Create event
             </Button>
           </CardContent>
         </Card>
+          </div>
+        </div>
+
         {/* Features */}
-        <div className="text-center mb-8 mt-16">
-          <h2 className="text-2xl font-bold mb-4">Why SchedMeet?</h2>
-          <p className="text-gray-600 max-w-2xl mx-auto">
-            A simple and efficient way to coordinate schedules with your team
-          </p>
-        </div>
-        <div className="grid md:grid-cols-3 gap-8 md:px-12">
-          <div className="text-center p-6 rounded-lg bg-white/50 backdrop-blur-sm border border-white/20 hover:bg-white/70 transition-all duration-300 hover:scale-105">
-            <Calendar1 className="w-8 h-8 mx-auto mb-3 text-blue-600" />
-            <h3 className="text-base font-semibold mb-2">Easy Scheduling</h3>
-            <p className="text-sm text-gray-600">
-              Select multiple dates and time ranges with just a few clicks
+        <section className="mt-4">
+          <div className="text-center mb-10">
+            <h2 className="text-2xl md:text-3xl font-semibold mb-3">
+              Built for modern teams
+            </h2>
+            <p className="text-slate-300 max-w-2xl mx-auto text-sm md:text-base">
+              Powerful enough for product squads, simple enough for family
+              dinners.
             </p>
           </div>
-          <div className="text-center p-6 rounded-lg bg-white/50 backdrop-blur-sm border border-white/20 hover:bg-white/70 transition-all duration-300 hover:scale-105">
-            <Users className="w-8 h-8 mx-auto mb-3 text-green-600" />
-            <h3 className="text-base font-semibold mb-2">
-              Visual Availability
-            </h3>
-            <p className="text-sm text-gray-600">
-              See everyone's availability at a glance with our heatmap grid
-            </p>
-          </div>
-          <div className="text-center p-6 rounded-lg bg-white/50 backdrop-blur-sm border border-white/20 hover:bg-white/70 transition-all duration-300 hover:scale-105">
-            <Share2 className="w-8 h-8 mx-auto mb-3 text-purple-600" />
-            <h3 className="text-base font-semibold mb-2">Easy Sharing</h3>
-            <p className="text-sm text-gray-600">
-              Share your poll with a simple link
-            </p>
-          </div>
-        </div>
-        {/* <ReviewSection /> */}
-        <footer className="mt-16 py-8 border-t border-gray-200">
-          <div className="container mx-auto px-4">
-            <div className="flex flex-col items-center gap-4 mb-4">
-              <div className="flex items-center gap-4">
-                <a
-                  href="mailto:contact@SchedMeet.com"
-                  className="text-gray-600 hover:text-gray-900 transition-colors flex items-center gap-2"
-                >
-                  <Mail className="w-4 h-4" />
-                  hdhvien2002@gmail.com
-                </a>
-              </div>
-            </div>
-            <div className="text-gray-600 w-full text-center">
-              <p className="!mb-0">
-                © {new Date().getFullYear()} SchedMeet. All rights reserved.
+          <div className="grid md:grid-cols-3 gap-6 md:gap-8">
+            <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6 md:p-7">
+              <Calendar1 className="w-7 h-7 mb-4 text-emerald-400" />
+              <h3 className="text-base md:text-lg font-semibold mb-2">
+                Smart date picking
+              </h3>
+              <p className="text-sm text-slate-300">
+                Offer specific dates or recurring weekdays so everyone can vote
+                on what works.
               </p>
             </div>
+            <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6 md:p-7">
+              <Users className="w-7 h-7 mb-4 text-sky-400" />
+              <h3 className="text-base md:text-lg font-semibold mb-2">
+                Clear availability
+              </h3>
+              <p className="text-sm text-slate-300">
+                See at a glance which time slots fit the most people with an
+                intuitive visual layout.
+              </p>
+            </div>
+            <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6 md:p-7">
+              <Share2 className="w-7 h-7 mb-4 text-violet-400" />
+              <h3 className="text-base md:text-lg font-semibold mb-2">
+                One simple link
+              </h3>
+              <p className="text-sm text-slate-300">
+                Share your event anywhere – Slack, email, or chat – and start
+                collecting responses instantly.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <footer className="mt-20 border-t border-slate-800/80 pt-8">
+          <div className="flex flex-col items-center gap-4 mb-4">
+            <div className="flex items-center gap-4">
+              <a
+                href="mailto:contact@SchedMeet.com"
+                className="text-slate-300 hover:text-slate-50 transition-colors flex items-center gap-2 text-sm"
+              >
+                <Mail className="w-4 h-4" />
+                hdhvien2002@gmail.com
+              </a>
+            </div>
+          </div>
+          <div className="text-slate-500 w-full text-center text-xs md:text-sm">
+            <p className="!mb-0">
+              © {new Date().getFullYear()} SchedMeet. All rights reserved.
+            </p>
           </div>
         </footer>
       </div>
