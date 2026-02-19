@@ -377,18 +377,18 @@ const EventPage = () => {
 
   return (
     <div
-      className={`h-screen overflow-x-hidden ${
+      className={`min-h-screen overflow-x-hidden ${
         isDragging ? "overflow-y-hidden" : "overflow-y-auto"
-      } bg-gradient-to-br from-blue-50 via-white to-green-50`}
+      } bg-gradient-to-b from-slate-50 via-white to-slate-50 text-slate-900`}
     >
-      <div className="container mx-auto  px-4 py-8">
+      <div className="container mx-auto max-w-6xl px-4 py-8 md:py-10">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div>
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
+          <div className="w-full md:w-auto">
             <Button
               variant="ghost"
               onClick={() => navigate("/")}
-              className="mb-4"
+              className="mb-3 md:mb-4 text-slate-700 hover:text-slate-900 hover:bg-slate-100"
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back to Home
@@ -403,13 +403,13 @@ const EventPage = () => {
               </div>
             ) : (
               <>
-                <h1 className="text-3xl font-bold text-gray-900">
+                <h1 className="text-2xl md:text-3xl font-bold text-slate-900">
                   {eventData?.name}
                 </h1>
-                <div className="flex items-center gap-4 mt-2">
+                <div className="flex items-center gap-3 mt-2">
                   <Badge
                     variant="secondary"
-                    className="flex items-center gap-1"
+                    className="flex items-center gap-1 bg-slate-100 text-slate-800 border-slate-200"
                   >
                     <Users className="w-3 h-3" />
                     {totalParticipants} participant
@@ -419,12 +419,12 @@ const EventPage = () => {
               </>
             )}
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 md:justify-end">
             <Button
               onClick={handleShareUrl}
               variant="outline"
               data-testid="share-button"
-              className="mr-2"
+              className="mr-1.5 border-slate-300 bg-white text-slate-800 hover:bg-slate-50"
             >
               <Share2 className="w-4 h-4 mr-2" />
               Share
@@ -433,10 +433,10 @@ const EventPage = () => {
           </div>
         </div>
 
-        <div className="grid lg:grid-cols-3 gap-8">
+        <div className="grid lg:grid-cols-3 gap-6 md:gap-8">
           {/* User Input */}
           <div className="lg:col-span-1 space-y-6">
-            <Card>
+            <Card className="border-slate-200 bg-white text-slate-900 shadow-sm">
               <CardHeader>
                 <CardTitle>Your Information</CardTitle>
                 <CardDescription>
@@ -453,6 +453,7 @@ const EventPage = () => {
                     onChange={handleUserNameChange}
                     disabled={hasEnteredName}
                     className={cn(
+                      "bg-white border-slate-200 text-slate-900 placeholder:text-slate-400",
                       userNameError &&
                         "border-red-500 focus-visible:ring-red-500"
                     )}
@@ -463,13 +464,13 @@ const EventPage = () => {
                 {userNameError && (
                   <p className="text-sm text-red-500 mt-1">{userNameError}</p>
                 )}
-                <p className="text-sm text-gray-500 mt-1">
+                <p className="text-sm text-slate-500 mt-1">
                   {userName.length}/250 characters
                 </p>
                 {!hasEnteredName ? (
                   <Button
                     onClick={handleNameSubmit}
-                    className="w-full"
+                    className="w-full bg-emerald-500 hover:bg-emerald-600 text-white"
                     disabled={!userName.trim()}
                     data-testid="continue-button"
                   >
@@ -489,7 +490,7 @@ const EventPage = () => {
             </Card>
 
             {/* Event Details */}
-            <Card>
+            <Card className="border-slate-200 bg-white text-slate-900 shadow-sm">
               <CardHeader>
                 <CardTitle>Event Details</CardTitle>
               </CardHeader>
@@ -512,7 +513,7 @@ const EventPage = () => {
                 ) : (
                   <>
                     <div>
-                      <strong>Time Range:</strong>{" "}
+                      <strong className="text-slate-900">Time Range:</strong>{" "}
                       {eventData?.time_range &&
                         format(
                           parse(
@@ -531,10 +532,14 @@ const EventPage = () => {
                     </div>
                     {eventData?.mode === "specific" && (
                       <div>
-                        <strong>Dates:</strong>
+                        <strong className="text-slate-900">Dates:</strong>
                         <div className="flex flex-wrap gap-1 mt-1">
                           {eventData.dates.map((dateStr, index) => (
-                            <Badge key={index} variant="outline">
+                            <Badge
+                              key={index}
+                              variant="outline"
+                              className="border-slate-200 text-slate-800 bg-slate-50"
+                            >
                               {format(new Date(dateStr), "MMM d, yyyy")}
                             </Badge>
                           ))}
@@ -543,10 +548,14 @@ const EventPage = () => {
                     )}
                     {eventData?.mode === "weekly" && (
                       <div>
-                        <strong>Days of Week:</strong>
+                        <strong className="text-slate-900">Days of Week:</strong>
                         <div className="flex flex-wrap gap-1 mt-1">
                           {eventData.days_of_week?.map((day) => (
-                            <Badge key={day} variant="outline">
+                            <Badge
+                              key={day}
+                              variant="outline"
+                              className="border-slate-200 text-slate-800 bg-slate-50"
+                            >
                               {
                                 [
                                   "Sunday",
@@ -571,7 +580,7 @@ const EventPage = () => {
 
           {/* Availability Grid */}
           <div className="lg:col-span-2">
-            <Card>
+            <Card className="border-slate-200 bg-white text-slate-900 shadow-sm">
               <CardHeader>
                 <CardTitle>Select Your Availability</CardTitle>
                 <CardDescription>

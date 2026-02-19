@@ -161,30 +161,30 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-slate-50">
-      <div className="container mx-auto px-4 py-16 flex flex-col gap-16">
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-slate-50 text-slate-900">
+      <div className="md:container mx-auto max-w-6xl px-3 sm:px-4 py-8 md:py-16 flex flex-col gap-10 md:gap-16">
         {/* Hero */}
-        <div className="grid gap-10 md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] items-center">
-          <div className="space-y-6">
-            <span className="inline-flex items-center rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-300 ring-1 ring-inset ring-emerald-500/30">
+        <div className="grid gap-8 md:gap-10 md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] items-start md:items-center">
+          <div className="space-y-5 md:space-y-6 order-2 md:order-1">
+            <span className="inline-flex items-center rounded-full bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-700 ring-1 ring-inset ring-emerald-200">
               New · Plan meetings without back-and-forth
             </span>
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-semibold tracking-tight">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-semibold tracking-tight">
               The fastest way to{" "}
               <span className="bg-gradient-to-r from-emerald-400 to-sky-400 bg-clip-text text-transparent">
                 find a time
               </span>{" "}
               that works.
             </h1>
-            <p className="text-base md:text-lg text-slate-300 max-w-xl">
+            <p className="text-sm sm:text-base md:text-lg text-slate-700 max-w-xl">
               Create a scheduling poll, share a single link, and instantly see
               when your team is free. No more DMs, spreadsheets, or timezone
               confusion.
             </p>
-            <div className="flex flex-wrap items-center gap-3">
+            <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3">
               <Button
                 variant="default"
-                className="bg-emerald-500 hover:bg-emerald-600 text-white px-6 md:px-8 py-2.5 md:py-3 text-sm md:text-base rounded-full shadow-lg shadow-emerald-500/30"
+                className="bg-emerald-500 hover:bg-emerald-600 text-white px-6 md:px-8 py-2.5 md:py-3 text-sm md:text-base rounded-full shadow-lg shadow-emerald-500/30 w-full sm:w-auto justify-center"
                 data-testid="primary-hero-button"
                 onClick={() => {
                   const el = document.getElementById("create-event-card");
@@ -197,7 +197,7 @@ const Index = () => {
               </Button>
               <Button
                 variant="outline"
-                className="flex items-center gap-2 rounded-full border-slate-700 bg-slate-900/40 text-slate-100 hover:bg-slate-900"
+                className="flex items-center gap-2 rounded-full border-slate-300 bg-white text-slate-800 hover:bg-slate-50 w-full sm:w-auto justify-center"
                 data-testid="github-star-button"
                 onClick={() =>
                   window.open("https://github.com/h-vien/schedmeet", "_blank")
@@ -208,7 +208,7 @@ const Index = () => {
               </Button>
               <BuyMeACoffeeModal />
             </div>
-            <div className="flex flex-wrap gap-4 text-xs md:text-sm text-slate-400">
+            <div className="flex flex-wrap gap-3 md:gap-4 text-xs md:text-sm text-slate-500">
               <div className="inline-flex items-center gap-1.5">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
                 No login required for participants
@@ -219,16 +219,16 @@ const Index = () => {
               </div>
             </div>
           </div>
-          <div className="relative">
-            <div className="absolute -inset-6 rounded-3xl bg-emerald-500/20 blur-3xl" />
+          <div className="relative order-1 md:order-2">
+            <div className="pointer-events-none absolute -inset-2 sm:-inset-6 rounded-3xl bg-emerald-200/40 blur-2xl sm:blur-3xl" />
             {/* Main Form */}
             <Card
               id="create-event-card"
-              className="relative max-w-md ml-auto border-slate-800 bg-slate-900/80 shadow-2xl shadow-emerald-500/20"
+              className="relative w-full max-w-md mx-auto md:ml-auto border-slate-200 bg-white shadow-2xl shadow-emerald-500/10 backdrop-blur"
             >
               <CardHeader className="text-center pb-4">
-                <CardTitle className="text-xl">Create your event</CardTitle>
-                <CardDescription className="text-slate-400">
+                <CardTitle className="text-xl text-slate-900">Create your event</CardTitle>
+                <CardDescription className="text-slate-500">
                   Set up a poll and share it in under a minute.
                 </CardDescription>
               </CardHeader>
@@ -358,56 +358,58 @@ const Index = () => {
         </div>
 
         {/* Features */}
-        <section className="mt-4">
-          <div className="text-center mb-10">
-            <h2 className="text-2xl md:text-3xl font-semibold mb-3">
-              Built for modern teams
-            </h2>
-            <p className="text-slate-300 max-w-2xl mx-auto text-sm md:text-base">
-              Powerful enough for product squads, simple enough for family
-              dinners.
-            </p>
-          </div>
-          <div className="grid md:grid-cols-3 gap-6 md:gap-8">
-            <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6 md:p-7">
-              <Calendar1 className="w-7 h-7 mb-4 text-emerald-400" />
-              <h3 className="text-base md:text-lg font-semibold mb-2">
-                Smart date picking
-              </h3>
-              <p className="text-sm text-slate-300">
-                Offer specific dates or recurring weekdays so everyone can vote
-                on what works.
+        <section className="mt-4 -mx-3 sm:-mx-4">
+          <div className="w-full max-w-3xl mx-auto px-3 sm:px-4">
+            <div className="text-center mb-10">
+              <h2 className="text-2xl md:text-3xl font-semibold mb-3">
+                Built for modern teams
+              </h2>
+              <p className="text-slate-600 max-w-2xl mx-auto text-sm md:text-base">
+                Powerful enough for product squads, simple enough for family
+                dinners.
               </p>
             </div>
-            <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6 md:p-7">
-              <Users className="w-7 h-7 mb-4 text-sky-400" />
-              <h3 className="text-base md:text-lg font-semibold mb-2">
-                Clear availability
-              </h3>
-              <p className="text-sm text-slate-300">
-                See at a glance which time slots fit the most people with an
-                intuitive visual layout.
-              </p>
-            </div>
-            <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6 md:p-7">
-              <Share2 className="w-7 h-7 mb-4 text-violet-400" />
-              <h3 className="text-base md:text-lg font-semibold mb-2">
-                One simple link
-              </h3>
-              <p className="text-sm text-slate-300">
-                Share your event anywhere – Slack, email, or chat – and start
-                collecting responses instantly.
-              </p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-8">
+              <div className="rounded-2xl border border-slate-200 bg-white p-5 md:p-7 shadow-sm">
+                <Calendar1 className="w-7 h-7 mb-3 md:mb-4 text-emerald-500" />
+                <h3 className="text-base md:text-lg font-semibold mb-1.5 md:mb-2">
+                  Smart date picking
+                </h3>
+                <p className="text-sm text-slate-600">
+                  Offer specific dates or recurring weekdays so everyone can vote
+                  on what works.
+                </p>
+              </div>
+              <div className="rounded-2xl border border-slate-200 bg-white p-5 md:p-7 shadow-sm">
+                <Users className="w-7 h-7 mb-3 md:mb-4 text-sky-500" />
+                <h3 className="text-base md:text-lg font-semibold mb-1.5 md:mb-2">
+                  Clear availability
+                </h3>
+                <p className="text-sm text-slate-600">
+                  See at a glance which time slots fit the most people with an
+                  intuitive visual layout.
+                </p>
+              </div>
+              <div className="rounded-2xl border border-slate-200 bg-white p-5 md:p-7 shadow-sm">
+                <Share2 className="w-7 h-7 mb-3 md:mb-4 text-violet-500" />
+                <h3 className="text-base md:text-lg font-semibold mb-1.5 md:mb-2">
+                  One simple link
+                </h3>
+                <p className="text-sm text-slate-600">
+                  Share your event anywhere – Slack, email, or chat – and start
+                  collecting responses instantly.
+                </p>
+              </div>
             </div>
           </div>
         </section>
 
-        <footer className="mt-20 border-t border-slate-800/80 pt-8">
+        <footer className="mt-20 border-t border-slate-200 pt-8">
           <div className="flex flex-col items-center gap-4 mb-4">
             <div className="flex items-center gap-4">
               <a
                 href="mailto:contact@SchedMeet.com"
-                className="text-slate-300 hover:text-slate-50 transition-colors flex items-center gap-2 text-sm"
+                className="text-slate-600 hover:text-slate-900 transition-colors flex items-center gap-2 text-sm"
               >
                 <Mail className="w-4 h-4" />
                 hdhvien2002@gmail.com
